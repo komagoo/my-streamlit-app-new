@@ -44,7 +44,12 @@ index_name = "maintenance-index"
 # 인덱스 리스트 확인 및 생성
 existing_indexes = pc.list_indexes().names()
 if index_name not in existing_indexes:
-    pc.create_index(name=index_name, dimension=1536, metric="cosine")
+    pc.create_index(
+        name=index_name,
+        dimension=1536,
+        metric="cosine",
+        spec=ServerlessSpec(cloud="aws", region="us-east-1")  # <- spec 명시
+    )
 
 # 인덱스 객체 가져오기
 index = pc.Index(index_name)
