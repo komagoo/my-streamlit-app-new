@@ -32,14 +32,16 @@ if not pinecone_api_key:
     st.error("❌ PINECONE_API_KEY가 설정되어 있지 않습니다. Streamlit Secrets 또는 환경변수를 확인하세요.")
     st.stop()
 
-pinecone.init(api_key=pinecone_api_key)
+# pinecone.init() 제거 후 Client 객체 생성
+client = pinecone.Client(api_key=pinecone_api_key)
 
 index_name = "maintenance-index"
 
-if index_name not in pinecone.list_indexes():
-    pinecone.create_index(index_name, dimension=1536)
+if index_name not in client.list_indexes():
+    client.create_index(name=index_name, dimension=1536)
 
-index = pinecone.Index(index_name)
+index = client.index(index_name)
+
 
 # 로고 이미지 base64 인코딩
 def get_base64_of_bin_file(bin_file_path):
