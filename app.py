@@ -3,7 +3,7 @@ import sys
 import streamlit as st
 from dotenv import load_dotenv
 from pinecone import Pinecone
-from pinecone import ServerlessSpec, IndexSpec
+from pinecone import ServerlessSpec
 
 # LangChain의 VectorStore용 Pinecone (이름 충돌 위험 있으니 별명 사용)
 from langchain_community.vectorstores import Pinecone as LangchainPinecone
