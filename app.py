@@ -2,7 +2,10 @@ import os
 import sys
 import streamlit as st
 from dotenv import load_dotenv
-import faiss
+from langchain_community.vectorstores import Pinecone
+import pinecone
+# ----------------------------
+
 # 버전 확인
 st.write("Python version:", sys.version)
 
@@ -89,17 +92,21 @@ if not st.session_state.logged_in:
     st.stop()
 
 # ----------------------------
-# OpenAI API 키 환경변수 세팅
-# ----------------------------
-if st.session_state.api_key and isinstance(st.session_state.api_key, str):
-    os.environ["OPENAI_API_KEY"] = st.session_state.api_key
+# 먼저 Streamlit secrets 또는 .env에서 불러오기
+api_key = (
+    st.session_state.get("api_key")
+    or os.getenv("OPENAI_API_KEY")
+    or st.secrets.get("OPENAI_API_KEY")
+)
+
+if api_key:
+    os.environ["OPENAI_API_KEY"] = api_key
 else:
-    api_key_env = os.getenv("OPENAI_API_KEY")
-    if api_key_env:
-        os.environ["OPENAI_API_KEY"] = api_key_env
-    else:
-        st.error("OpenAI API 키가 설정되어 있지 않습니다. 환경변수를 확인하거나 로그인 후 API 키를 입력하세요.")
-        st.stop()
+    st.error("❌ OpenAI API 키가 설정되어 있지 않습니다. 아래 방법 중 하나를 확인하세요:\n"
+             "- 로그인 후 API 키 입력\n"
+             "- `.env` 파일에 설정 (로컬 개발 시)\n"
+             "- Streamlit Cloud Secrets에 설정")
+    st.stop()
 
 
 
@@ -235,45 +242,62 @@ for cause, actions in cause_action_counts.items():
 
 df_success = pd.DataFrame(rows)
 # ----------------------------
-# 5. LangChain RAG 준비 (임베딩 및 벡터 DB 생성, 세션 캐싱 포함)
+# 5. LangChain RAG 준비 (Pinecone 기반, 세션 캐싱 포함)
+# ----------------------------
+
+# ✅ Pinecone API 초기화 (Streamlit Secrets에 등록된 키를 불러옴)
+pinecone.init(
+    api_key=os.getenv("PINECONE_API_KEY"),             # 🔑 API 키
+    environment=os.getenv("PINECONE_ENVIRONMENT")      # 🌎 환경 이름 (예: gcp-starter)
+)
+
+# ✅ 사용할 인덱스 이름 설정 (없으면 최초 실행 시 생성됨)
+index_name = "maintenance-index"
+if index_name not in pinecone.list_indexes():
+    pinecone.create_index(index_name, dimension=1536)  # 📏 임베딩 차원 수 (OpenAI 1536)
+
+# ✅ Pinecone 인덱스 객체 가져오기
+index = pinecone.Index(index_name)
+
+# ✅ 정비노트를 LangChain 문서 객체로 변환
 documents = [
     Document(page_content=str(row['정비노트']), metadata={'row': idx})
     for idx, row in df.iterrows()
 ]
 
+# ✅ 문서 분할 (너무 길면 쪼개기)
 splitter = CharacterTextSplitter(chunk_size=500, chunk_overlap=50)
 split_docs = splitter.split_documents(documents)
 
-INDEX_PATH = "faiss_index.index"  # 저장할 인덱스 파일명
-
-def load_or_create_vectordb(documents, embedding_model):
-    if os.path.exists(INDEX_PATH):
-        index = faiss.read_index(INDEX_PATH)
-        vectordb = FAISS(embedding_function=embedding_model.embed_query, index=index)
-    else:
-        vectordb = FAISS.from_documents(documents, embedding_model)
-        faiss.write_index(vectordb.index, INDEX_PATH)
-    return vectordb
-
+# ✅ 세션에 embedding과 vectordb가 없으면 새로 생성
 if "embedding_model" not in st.session_state or "vectordb" not in st.session_state:
-    with st.spinner("🔍 임베딩 생성 중입니다. 잠시만 기다려주세요..."):
+    with st.spinner("🔍 Pinecone 임베딩 생성 중입니다..."):
+        # ✅ OpenAI 임베딩 모델 초기화
         embedding_model = OpenAIEmbeddings(model="text-embedding-3-large")
 
-        vectordb = load_or_create_vectordb(split_docs, embedding_model)
+        # ✅ Pinecone에 벡터 저장소 업로드 (자동 임베딩 포함)
+        vectordb = Pinecone.from_documents(
+            documents=split_docs,
+            embedding=embedding_model,
+            index_name=index_name  # 📂 저장된 인덱스 이름
+        )
 
+        # ✅ 세션에 저장 (앱 실행 중 재사용)
         st.session_state["embedding_model"] = embedding_model
         st.session_state["vectordb"] = vectordb
 else:
+    # ✅ 이전에 생성된 임베딩 및 벡터 DB 사용
     embedding_model = st.session_state["embedding_model"]
     vectordb = st.session_state["vectordb"]
 
+# ✅ LLM + 벡터 검색 기반 QA 체인 생성
 llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
-
 qa_chain = RetrievalQA.from_chain_type(
     llm=llm,
-    retriever=vectordb.as_retriever(search_kwargs={'k': 20}),
+    retriever=vectordb.as_retriever(search_kwargs={'k': 20}),  # 🔍 유사도 기반 top 20
     return_source_documents=True
 )
+
 # ----------------------
 # 6. 사이드바 메뉴
 # ----------------------
