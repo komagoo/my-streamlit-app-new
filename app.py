@@ -92,21 +92,24 @@ if not st.session_state.logged_in:
     st.stop()
 
 # ----------------------------
-# 먼저 Streamlit secrets 또는 .env에서 불러오기
+# OpenAI API 키 불러오기 (세션, 환경변수, Streamlit Secrets 순서로 확인)
 api_key = (
     st.session_state.get("api_key")
     or os.getenv("OPENAI_API_KEY")
-    or st.secrets.get("OPENAI_API_KEY")
+    or (st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else None)
 )
 
 if api_key:
     os.environ["OPENAI_API_KEY"] = api_key
 else:
-    st.error("❌ OpenAI API 키가 설정되어 있지 않습니다. 아래 방법 중 하나를 확인하세요:\n"
-             "- 로그인 후 API 키 입력\n"
-             "- `.env` 파일에 설정 (로컬 개발 시)\n"
-             "- Streamlit Cloud Secrets에 설정")
+    st.error(
+        "❌ OpenAI API 키가 설정되어 있지 않습니다. 아래 방법 중 하나를 확인하세요:\n"
+        "- 로그인 후 API 키를 입력하세요.\n"
+        "- 로컬 개발 시 `.env` 파일에 API 키를 설정하세요.\n"
+        "- Streamlit Cloud Secrets에 API 키를 추가하세요."
+    )
     st.stop()
+
 
 
 
