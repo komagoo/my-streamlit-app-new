@@ -105,8 +105,7 @@ else:
 
 # 메인 타이틀 (로그인 후 최상단)
 # ----------------------------
-st.title("🛠 HERO (Hynix Equipment Response Operator)")
-st.caption("하이닉스 장비 문제, HERO와 함께 해결해요!")
+st.title("하이닉스 장비 문제, HERO와 함께 해결해요!")
 
 
 # ----------------------------
@@ -534,7 +533,7 @@ elif menu == "📈 정비 통계 자료":
                 title="전체 장비별 고장 비율",
                 hole=0.4
             )
-            fig_all.update_traces(textinfo='percent+label')
+            fig_all.update_traces(textinfo='label+value')
             st.plotly_chart(fig_all, use_container_width=True)
 
             prompt_cause = f"문제 원인: {', '.join(top5_equip.index)}\n모든 장비의 문제 발생을 전체적인 비율을 나타낸 그래프입니다. 해당 비율을 분석해봤을 때, 얻을 수 있는 장비의 문제 발생 비율에 대한 인사이트를 2~3줄로 제시해주세요. 숫자는 언급하지 마세요. 1~3위 정도는 장비도 자연스럽게 언급해 주세요."
