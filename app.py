@@ -249,7 +249,6 @@ for cause, actions in cause_action_counts.items():
         })
 
 df_success = pd.DataFrame(rows)
-
 # ----------------------------
 # 5. LangChain RAG 준비 (임베딩 및 벡터 DB 생성, 세션 캐싱 포함)
 # ----------------------------
@@ -264,7 +263,16 @@ split_docs = splitter.split_documents(documents)
 if "embedding_model" not in st.session_state or "vectordb" not in st.session_state:
     with st.spinner("🔍 임베딩 생성 중입니다. 잠시만 기다려주세요..."):
         embedding_model = OpenAIEmbeddings(model="text-embedding-3-large")
-        vectordb = Chroma.from_documents(documents=split_docs, embedding=embedding_model)
+
+        # ✅ 임시 디렉토리로 설정 (Streamlit Cloud 호환)
+        persist_directory = tempfile.mkdtemp()
+
+        vectordb = Chroma.from_documents(
+            documents=split_docs,
+            embedding=embedding_model,
+            persist_directory=persist_directory  # 💡 핵심 포인트
+        )
+
         st.session_state["embedding_model"] = embedding_model
         st.session_state["vectordb"] = vectordb
 else:
