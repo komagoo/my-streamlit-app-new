@@ -3,6 +3,7 @@ import sys
 import streamlit as st
 from dotenv import load_dotenv
 from pinecone import Pinecone
+from pinecone import ServerlessSpec, IndexSpec
 
 # LangChain의 VectorStore용 Pinecone (이름 충돌 위험 있으니 별명 사용)
 from langchain_community.vectorstores import Pinecone as LangchainPinecone
@@ -277,7 +278,11 @@ pc = Pinecone(api_key=pinecone_api_key)
 # ✅ 사용할 인덱스 이름 설정 (없으면 최초 실행 시 생성됨)
 index_name = "maintenance-index"
 if index_name not in pc.list_indexes():
-    pc.create_index(name=index_name, dimension=1536)
+    pc.create_index(
+    name=index_name,
+    dimension=1536,
+    spec=ServerlessSpec(cloud="aws", region="us-west-2")
+)
 
 # ✅ Pinecone 인덱스 객체 가져오기
 index = pc.Index(index_name)
