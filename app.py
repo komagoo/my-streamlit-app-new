@@ -105,7 +105,8 @@ else:
 
 # 메인 타이틀 (로그인 후 최상단)
 # ----------------------------
-st.title("하이닉스 장비 문제, HERO와 함께 해결해요!")
+st.markdown("<h2 style='color:#000000; font-weight:bold;'>하이닉스 장비 문제, HERO와 함께 해결해요!</h2>", unsafe_allow_html=True)
+
 
 
 # ----------------------------
