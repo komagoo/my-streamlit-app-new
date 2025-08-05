@@ -2,8 +2,17 @@ import os
 import sys
 import streamlit as st
 from dotenv import load_dotenv
-from langchain_community.vectorstores import Pinecone
-import pinecone
+from pinecone import Pinecone
+
+# LangChain의 VectorStore용 Pinecone (이름 충돌 위험 있으니 별명 사용)
+from langchain_community.vectorstores import Pinecone as LangchainPinecone
+
+# pinecone v3용 클래스(벡터 데이터베이스 관련)
+from pinecone import Pinecone
+
+
+# ...아래 코드 진행...
+
 # ----------------------------
 
 # 버전 확인
@@ -31,16 +40,17 @@ if not pinecone_api_key:
     st.error("❌ PINECONE_API_KEY가 설정되어 있지 않습니다. Streamlit Secrets 또는 환경변수를 확인하세요.")
     st.stop()
 
-pinecone.init(api_key=pinecone_api_key)  # ✅ Client 없음!
+# Pinecone client 객체 생성
+pc = Pinecone(api_key=pinecone_api_key)
 
 index_name = "maintenance-index"
 
 # 인덱스 리스트 확인 및 생성
-if index_name not in pinecone.list_indexes():
-    pinecone.create_index(name=index_name, dimension=1536)
+if index_name not in pc.list_indexes():
+    pc.create_index(name=index_name, dimension=1536)
 
 # 인덱스 객체 생성
-index = pinecone.Index(index_name)
+index = pc.Index(index_name)
 
 # 로고 이미지 base64 인코딩
 def get_base64_of_bin_file(bin_file_path):
@@ -263,18 +273,17 @@ df_success = pd.DataFrame(rows)
 # ----------------------------
 
 # ✅ Pinecone API 초기화 (Streamlit Secrets에 등록된 키를 불러옴)
-pinecone.init(
-    api_key=os.getenv("PINECONE_API_KEY"),             # 🔑 API 키
-    environment=os.getenv("PINECONE_ENVIRONMENT")      # 🌎 환경 이름 (예: gcp-starter)
-)
+pinecone_api_key = os.getenv("PINECONE_API_KEY")
+#pinecone_environment = os.getenv("PINECONE_ENVIRONMENT")
+pc = Pinecone(api_key=pinecone_api_key)
 
 # ✅ 사용할 인덱스 이름 설정 (없으면 최초 실행 시 생성됨)
 index_name = "maintenance-index"
-if index_name not in pinecone.list_indexes():
-    pinecone.create_index(index_name, dimension=1536)  # 📏 임베딩 차원 수 (OpenAI 1536)
+if index_name not in pc.list_indexes():
+    pc.create_index(name=index_name, dimension=1536)
 
 # ✅ Pinecone 인덱스 객체 가져오기
-index = pinecone.Index(index_name)
+index = pc.Index(index_name)
 
 # ✅ 정비노트를 LangChain 문서 객체로 변환
 documents = [
