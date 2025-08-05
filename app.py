@@ -51,39 +51,47 @@ st.markdown(
 # ----------------------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
+if "api_key" not in st.session_state:
     st.session_state.api_key = None
 
 # ----------------------------
 # 1. 로그인 단계
 # ----------------------------
-# 로그인 성공 시
-if st.button("로그인"):
-    if username in valid_users and password == valid_users[username]:
-        st.session_state.logged_in = True
-        st.session_state.username = username
+if not st.session_state.logged_in:
+    st.subheader("🔑 로그인")
 
-        # 환경변수에서 API 키 읽기
-        api_key = os.getenv("OPENAI_API_KEY")
-        if api_key:
-            st.session_state.api_key = api_key
+    username = st.text_input("아이디")
+    password = st.text_input("비밀번호", type="password")
+
+    valid_users = {
+        "sunnyc250728!@": "sunnyc250728!@",
+    }
+
+    if st.button("로그인"):
+        if username in valid_users and password == valid_users[username]:
+            st.session_state.logged_in = True
+            st.session_state.username = username
+            # ✅ secrets에서 API 키 불러오기
+            st.session_state.api_key = st.secrets["OPENAI_API_KEY"]
             st.success(f"✅ {username}님, 환영합니다!")
-            st.experimental_rerun()
+            st.rerun()
         else:
-            st.error("서버에 OPENAI_API_KEY 환경변수가 설정되어 있지 않습니다.")
-    else:
-        st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
-
+            st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
     st.stop()
 
 # ----------------------------
 # OpenAI API 키 환경변수 세팅
 # ----------------------------
-
 if st.session_state.api_key and isinstance(st.session_state.api_key, str):
     os.environ["OPENAI_API_KEY"] = st.session_state.api_key
 else:
-    st.error("OpenAI API 키가 설정되어 있지 않습니다. 환경변수를 확인하거나 로그인 후 API 키를 입력하세요.")
-    st.stop()
+    api_key_env = os.getenv("OPENAI_API_KEY")
+    if api_key_env:
+        os.environ["OPENAI_API_KEY"] = api_key_env
+    else:
+        st.error("OpenAI API 키가 설정되어 있지 않습니다. 환경변수를 확인하거나 로그인 후 API 키를 입력하세요.")
+        st.stop()
+
 
 
 # 메인 타이틀 (로그인 후 최상단)
