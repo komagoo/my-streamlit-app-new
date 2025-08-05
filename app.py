@@ -1,4 +1,5 @@
 import os
+import streamlit as st
 from dotenv import load_dotenv
 load_dotenv()  # .env 파일에서 환경변수 자동 로드
 
