@@ -1,7 +1,12 @@
 import os
 import streamlit as st
+import sys
 from dotenv import load_dotenv
+
+st.write("Python version:", sys.version)
+
 load_dotenv()  # .env 파일에서 환경변수 자동 로드
+
 
 import pandas as pd
 import re
