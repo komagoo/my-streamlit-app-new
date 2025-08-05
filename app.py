@@ -1,26 +1,46 @@
 import os
-import streamlit as st
 import sys
+import streamlit as st
 from dotenv import load_dotenv
 
+# 버전 확인
 st.write("Python version:", sys.version)
 
-load_dotenv()  # .env 파일에서 환경변수 자동 로드
+# 환경 변수 로드 (.env)
+load_dotenv()
 
-
+# 일반 라이브러리
 import pandas as pd
 import re
 from collections import defaultdict, Counter
-import streamlit as st
 import plotly.express as px
 import base64
+import tempfile  # 👈 추가
 
+# Langchain 관련
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import RetrievalQA
+
+# ↓ 이후에 벡터 저장소 만들 때 이렇게 사용하세요
+# 예시:
+# documents = [...]  # Document 객체 리스트
+# embedding_model = OpenAIEmbeddings()
+
+# 👇 임시 디렉토리 생성
+persist_directory = tempfile.mkdtemp()
+
+# 👇 임시 디렉토리를 사용하는 Chroma 초기화 예시
+# split_docs = [...]  # 문서 분할 결과
+# vectordb = Chroma.from_documents(
+#     documents=split_docs,
+#     embedding=embedding_model,
+#     persist_directory=persist_directory
+# )
+
 
 
 # 로고 이미지 base64 인코딩
