@@ -509,7 +509,7 @@ with tab1:
                 x=top5_cause.values,
                 y=top5_cause.index,
                 orientation='h',
-                text=top5_cause.values,
+                text=[f"{v}건" for v in top5_cause.values],
                 color=top5_cause.values,
                 color_continuous_scale='OrRd'
             )
