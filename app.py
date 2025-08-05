@@ -1,11 +1,26 @@
+import os
+import sys
+import streamlit as st
+from dotenv import load_dotenv
+from pinecone import Pinecone
+
+# LangChain의 VectorStore용 Pinecone (이름 충돌 위험 있으니 별명 사용)
+from langchain_community.vectorstores import Pinecone as LangchainPinecone
+
+# ----------------------------
+
+# 버전 확인
+st.write("Python version:", sys.version)
+
+# 환경 변수 로드 (.env)
+load_dotenv()
+
 # 일반 라이브러리
 import pandas as pd
 import re
 from collections import defaultdict, Counter
 import plotly.express as px
 import base64
-import os
-import streamlit as st
 
 # Langchain 관련
 from langchain.docstore.document import Document
@@ -21,14 +36,14 @@ if not pinecone_api_key:
     st.stop()
 
 # Pinecone client 객체 생성
-from pinecone import Pinecone
 pc = Pinecone(api_key=pinecone_api_key)
 
 index_name = "maintenance-index"
 
 # 인덱스 리스트 확인 및 생성
-if index_name not in [idx.name for idx in pc.list_indexes()]:
-    pc.create_index(name=index_name, dimension=1536)
+existing_indexes = pc.list_indexes().names()
+if index_name not in existing_indexes:
+    pc.create_index(name=index_name, dimension=1536, metric="cosine")
 
 # 인덱스 객체 가져오기
 index = pc.Index(index_name)
@@ -41,6 +56,7 @@ def get_base64_of_bin_file(bin_file_path):
 
 logo_path = "Hero_logo(final).png"  # 실행 폴더 기준 상대경로
 logo_base64 = get_base64_of_bin_file(logo_path)
+
 
 
 # ----------------------------
