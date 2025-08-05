@@ -467,7 +467,10 @@ elif menu == "📈 정비 통계 자료":
                 values=top5_equip.values,
                 hole=0.4
             )
-            fig1.update_traces(textinfo='percent+label')
+            fig1.update_traces(
+    text=[f"{name}: {value}건" for name, value in zip(top5_equip.index, top5_equip.values)],
+    textinfo='text'
+)
             st.plotly_chart(fig1, use_container_width=True)
 
             prompt_cause = f"문제 원인: {', '.join(top5_equip.index)}\n각 장비의 고장 패턴과 발생 경향을 바탕으로, 예방 정비와 공정 운영 측면에서 얻을 수 있는 핵심 인사이트를 2~3문장으로 요약해 주세요.숫자는 언급하지 마세요. 1~3위 정도는 장비도 자연스럽게 언급해 주세요."
@@ -533,7 +536,7 @@ elif menu == "📈 정비 통계 자료":
                 title="전체 장비별 고장 비율",
                 hole=0.4
             )
-            fig_all.update_traces(textinfo='label+value')
+            fig_all.update_traces(textinfo='percent+label')
             st.plotly_chart(fig_all, use_container_width=True)
 
             prompt_cause = f"문제 원인: {', '.join(top5_equip.index)}\n모든 장비의 문제 발생을 전체적인 비율을 나타낸 그래프입니다. 해당 비율을 분석해봤을 때, 얻을 수 있는 장비의 문제 발생 비율에 대한 인사이트를 2~3줄로 제시해주세요. 숫자는 언급하지 마세요. 1~3위 정도는 장비도 자연스럽게 언급해 주세요."
