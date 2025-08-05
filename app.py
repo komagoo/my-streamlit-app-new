@@ -19,7 +19,6 @@ from collections import defaultdict, Counter
 import plotly.express as px
 import base64
 
-
 # Langchain 관련
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter
@@ -27,20 +26,20 @@ from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import RetrievalQA
 
-# Pinecone 초기화
+# Pinecone 초기화 - 최신 방식
 pinecone_api_key = os.getenv("PINECONE_API_KEY")
 if not pinecone_api_key:
     st.error("❌ PINECONE_API_KEY가 설정되어 있지 않습니다. Streamlit Secrets 또는 환경변수를 확인하세요.")
     st.stop()
 
-client = pinecone.Client(api_key=pinecone_api_key)
+pinecone.init(api_key=pinecone_api_key)
+
 index_name = "maintenance-index"
 
-if index_name not in client.list_indexes():
-    client.create_index(name=index_name, dimension=1536)
+if index_name not in pinecone.list_indexes():
+    pinecone.create_index(index_name, dimension=1536)
 
-index = client.index(index_name)
-
+index = pinecone.Index(index_name)
 
 # 로고 이미지 base64 인코딩
 def get_base64_of_bin_file(bin_file_path):
