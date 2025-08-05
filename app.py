@@ -4,7 +4,8 @@ import streamlit as st
 from dotenv import load_dotenv
 import faiss
 # 버전 확인
-st.write("Python version:", sys.version)
+st.write(f"Python version: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+
 
 # 환경 변수 로드 (.env)
 load_dotenv()
@@ -453,60 +454,60 @@ if menu == "🔹 정비 검색 & 추천":
 elif menu == "📈 정비 통계 자료":
     st.subheader("📈 정비 통계 자료")
 
-tab1, tab2, tab3 = st.tabs(["🏆 Top5 요약", "📊 전체 요약", "🔹 장비별 상세"])
+    tab1, tab2, tab3 = st.tabs(["🏆 Top5 요약", "📊 전체 요약", "🔹 장비별 상세"])
 
-# ----------------------
-# Tab1: Top5
-# ----------------------
-with tab1:
-    with st.spinner("📊 Top5 요약 데이터를 준비 중입니다..."):
-        st.subheader("🔧 가장 많이 고장난 장비 TOP5")
-        top5_equip = df['모델'].value_counts().head(5)
+    # ----------------------
+    # Tab1: Top5
+    # ----------------------
+    with tab1:
+        with st.spinner("📊 Top5 요약 데이터를 준비 중입니다..."):
+            st.subheader("🔧 가장 많이 고장난 장비 TOP5")
+            top5_equip = df['모델'].value_counts().head(5)
 
-        fig1 = px.bar(
-            x=top5_equip.values,
-            y=top5_equip.index,
-            orientation='h',
-            text=[f"{v}건" for v in top5_equip.values],
-            color=top5_equip.values,
-            color_continuous_scale='Blues'
-        )
-        fig1.update_traces(textposition='outside')
-        st.plotly_chart(fig1, use_container_width=True)
+            fig1 = px.bar(
+                x=top5_equip.values,
+                y=top5_equip.index,
+                orientation='h',
+                text=[f"{v}건" for v in top5_equip.values],
+                color=top5_equip.values,
+                color_continuous_scale='Blues'
+            )
+            fig1.update_traces(textposition='outside')
+            st.plotly_chart(fig1, use_container_width=True)
 
-        prompt_cause = f"문제 원인: {', '.join(top5_equip.index)}\n각 장비의 고장 패턴과 발생 경향을 바탕으로, 예방 정비와 공정 운영 측면에서 얻을 수 있는 핵심 인사이트를 2~3문장으로 요약해 주세요. 숫자는 언급하지 마세요. 1~3위 정도는 장비도 자연스럽게 언급해 주세요."
-        insight_cause = llm.predict(prompt_cause)
-        st.markdown(f"💡 **문제 원인 인사이트:** {insight_cause}")
+            prompt_cause = f"문제 원인: {', '.join(top5_equip.index)}\n각 장비의 고장 패턴과 발생 경향을 바탕으로, 예방 정비와 공정 운영 측면에서 얻을 수 있는 핵심 인사이트를 2~3문장으로 요약해 주세요. 숫자는 언급하지 마세요. 1~3위 정도는 장비도 자연스럽게 언급해 주세요."
+            insight_cause = llm.predict(prompt_cause)
+            st.markdown(f"💡 **문제 원인 인사이트:** {insight_cause}")
 
-        # 문제원인 10개 정의
-        problem_keywords = [
-            "wafer not", "plasma ignition failure", "pumpdown 시간 지연",
-            "mass flow controller 이상", "etch residue over spec",
-            "temperature abnormal", "slot valve 동작 불량",
-            "chamber leak", "sensor error", "RF auto match 불량"
-        ]
+            # 문제원인 10개 정의
+            problem_keywords = [
+                "wafer not", "plasma ignition failure", "pumpdown 시간 지연",
+                "mass flow controller 이상", "etch residue over spec",
+                "temperature abnormal", "slot valve 동작 불량",
+                "chamber leak", "sensor error", "RF auto match 불량"
+            ]
 
-        # TF-IDF 기반 문제원인 분류 (기타 제거)
-        from sklearn.feature_extraction.text import TfidfVectorizer
-        from sklearn.metrics.pairwise import cosine_similarity
+            # TF-IDF 기반 문제원인 분류 (기타 제거)
+            from sklearn.feature_extraction.text import TfidfVectorizer
+            from sklearn.metrics.pairwise import cosine_similarity
 
-        notes = df['정비노트'].astype(str).str.lower().tolist()
-        corpus = notes + [kw.lower() for kw in problem_keywords]
+            notes = df['정비노트'].astype(str).str.lower().tolist()
+            corpus = notes + [kw.lower() for kw in problem_keywords]
 
-        vectorizer = TfidfVectorizer()
-        tfidf_matrix = vectorizer.fit_transform(corpus)
+            vectorizer = TfidfVectorizer()
+            tfidf_matrix = vectorizer.fit_transform(corpus)
 
-        note_vecs = tfidf_matrix[:-len(problem_keywords)]
-        keyword_vecs = tfidf_matrix[-len(problem_keywords):]
+            note_vecs = tfidf_matrix[:-len(problem_keywords)]
+            keyword_vecs = tfidf_matrix[-len(problem_keywords):]
 
-        similarity_matrix = cosine_similarity(note_vecs, keyword_vecs)
-        best_match_indices = similarity_matrix.argmax(axis=1)
-        df['문제원인'] = [problem_keywords[i] for i in best_match_indices]
+            similarity_matrix = cosine_similarity(note_vecs, keyword_vecs)
+            best_match_indices = similarity_matrix.argmax(axis=1)
+            df['문제원인'] = [problem_keywords[i] for i in best_match_indices]
 
-        st.subheader("⚠️ 문제 원인 TOP5")
-        top5_cause = df['문제원인'].value_counts().head(5)
+            st.subheader("⚠️ 문제 원인 TOP5")
+            top5_cause = df['문제원인'].value_counts().head(5)
 
-        fig2 = px.bar(
+            fig2 = px.bar(
                 x=top5_cause.values,
                 y=top5_cause.index,
                 orientation='h',
@@ -514,12 +515,12 @@ with tab1:
                 color=top5_cause.values,
                 color_continuous_scale='OrRd'
             )
-        fig2.update_traces(textposition='outside')
-        st.plotly_chart(fig2, use_container_width=True)
+            fig2.update_traces(textposition='outside')
+            st.plotly_chart(fig2, use_container_width=True)
 
-        prompt_cause = f"문제 원인: {', '.join(top5_cause.index)}\n각 문제 원인의 영향과 인사이트를 2~3문장으로 줄글 요약해줘."
-        insight_cause = llm.predict(prompt_cause)
-        st.markdown(f"💡 **문제 원인 인사이트:** {insight_cause}")
+            prompt_cause = f"문제 원인: {', '.join(top5_cause.index)}\n각 문제 원인의 영향과 인사이트를 2~3문장으로 줄글 요약해줘."
+            insight_cause = llm.predict(prompt_cause)
+            st.markdown(f"💡 **문제 원인 인사이트:** {insight_cause}")
 
     # ----------------------
     # Tab2: 전체 요약
@@ -560,6 +561,8 @@ with tab1:
             prompt_cause = f"문제 원인: {', '.join(top5_equip.index)}\n모든 문제의 원인을 전체적인 비율을 나타낸 그래프입니다. 해당 비율을 분석해봤을 때, 얻을 수 있는 문제 발생원인에 대한 인사이트를 2~3줄로 제시해주세요. 숫자는 언급하지 마세요. 1~3위 정도는 문제 원인도 자연스럽게 언급해 주세요."
             insight_cause = llm.predict(prompt_cause)
             st.markdown(f"💡 **문제 원인 인사이트:** {insight_cause}")
+
+
 
     # ----------------------
     # Tab3: 장비별 상세
