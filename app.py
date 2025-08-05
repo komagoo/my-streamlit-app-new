@@ -80,8 +80,17 @@ if not st.session_state.logged_in:
 # ----------------------------
 # OpenAI API 키 환경변수 세팅
 # ----------------------------
-os.environ["OPENAI_API_KEY"] = st.session_state.api_key
-# ----------------------------
+
+if st.session_state.api_key and isinstance(st.session_state.api_key, str):
+    os.environ["OPENAI_API_KEY"] = st.session_state.api_key
+else:
+    api_key_env = os.getenv("OPENAI_API_KEY")
+    if api_key_env:
+        os.environ["OPENAI_API_KEY"] = api_key_env
+    else:
+        st.error("OpenAI API 키가 설정되어 있지 않습니다. 환경변수를 확인하거나 로그인 후 API 키를 입력하세요.")
+        st.stop()
+
 # 메인 타이틀 (로그인 후 최상단)
 # ----------------------------
 st.title("💡 AI 기반 정비 이력 분석 도우미")
