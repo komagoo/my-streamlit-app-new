@@ -11,10 +11,11 @@ import base64
 
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
-from langchain.chat_models import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import RetrievalQA
+
 
 # 로고 이미지 base64 인코딩
 def get_base64_of_bin_file(bin_file_path):
@@ -55,26 +56,23 @@ if "logged_in" not in st.session_state:
 # ----------------------------
 # 1. 로그인 단계
 # ----------------------------
-if not st.session_state.logged_in:
-    st.subheader("🔑 로그인")  # 소제목
+# 로그인 성공 시
+if st.button("로그인"):
+    if username in valid_users and password == valid_users[username]:
+        st.session_state.logged_in = True
+        st.session_state.username = username
 
-    username = st.text_input("아이디")
-    password = st.text_input("비밀번호", type="password")
-
-    valid_users = {
-        "sunnyc250728!@": "sunnyc250728!@",
-    }
-
-    if st.button("로그인"):
-        if username in valid_users and password == valid_users[username]:
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            # 환경변수에서 API키 가져오기
-            st.session_state.api_key = os.getenv("OPENAI_API_KEY")
+        # 환경변수에서 API 키 읽기
+        api_key = os.getenv("OPENAI_API_KEY")
+        if api_key:
+            st.session_state.api_key = api_key
             st.success(f"✅ {username}님, 환영합니다!")
-            st.rerun()
+            st.experimental_rerun()
         else:
-            st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
+            st.error("서버에 OPENAI_API_KEY 환경변수가 설정되어 있지 않습니다.")
+    else:
+        st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
+
     st.stop()
 
 # ----------------------------
@@ -84,12 +82,9 @@ if not st.session_state.logged_in:
 if st.session_state.api_key and isinstance(st.session_state.api_key, str):
     os.environ["OPENAI_API_KEY"] = st.session_state.api_key
 else:
-    api_key_env = os.getenv("OPENAI_API_KEY")
-    if api_key_env:
-        os.environ["OPENAI_API_KEY"] = api_key_env
-    else:
-        st.error("OpenAI API 키가 설정되어 있지 않습니다. 환경변수를 확인하거나 로그인 후 API 키를 입력하세요.")
-        st.stop()
+    st.error("OpenAI API 키가 설정되어 있지 않습니다. 환경변수를 확인하거나 로그인 후 API 키를 입력하세요.")
+    st.stop()
+
 
 # 메인 타이틀 (로그인 후 최상단)
 # ----------------------------
