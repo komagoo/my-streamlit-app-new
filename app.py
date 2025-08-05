@@ -1,32 +1,11 @@
-import os
-import sys
-import streamlit as st
-from dotenv import load_dotenv
-from pinecone import Pinecone
-
-# LangChain의 VectorStore용 Pinecone (이름 충돌 위험 있으니 별명 사용)
-from langchain_community.vectorstores import Pinecone as LangchainPinecone
-
-# pinecone v3용 클래스(벡터 데이터베이스 관련)
-from pinecone import Pinecone
-
-
-# ...아래 코드 진행...
-
-# ----------------------------
-
-# 버전 확인
-st.write("Python version:", sys.version)
-
-# 환경 변수 로드 (.env)
-load_dotenv()
-
 # 일반 라이브러리
 import pandas as pd
 import re
 from collections import defaultdict, Counter
 import plotly.express as px
 import base64
+import os
+import streamlit as st
 
 # Langchain 관련
 from langchain.docstore.document import Document
@@ -35,21 +14,23 @@ from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import RetrievalQA
 
+# Pinecone 초기화
 pinecone_api_key = os.getenv("PINECONE_API_KEY")
 if not pinecone_api_key:
     st.error("❌ PINECONE_API_KEY가 설정되어 있지 않습니다. Streamlit Secrets 또는 환경변수를 확인하세요.")
     st.stop()
 
 # Pinecone client 객체 생성
+from pinecone import Pinecone
 pc = Pinecone(api_key=pinecone_api_key)
 
 index_name = "maintenance-index"
 
 # 인덱스 리스트 확인 및 생성
-if index_name not in pc.list_indexes():
+if index_name not in [idx.name for idx in pc.list_indexes()]:
     pc.create_index(name=index_name, dimension=1536)
 
-# 인덱스 객체 생성
+# 인덱스 객체 가져오기
 index = pc.Index(index_name)
 
 # 로고 이미지 base64 인코딩
