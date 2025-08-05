@@ -247,14 +247,25 @@ split_docs = splitter.split_documents(documents)
 
 INDEX_PATH = "faiss_index.index"  # 저장할 인덱스 파일명
 
+from langchain.docstore import InMemoryDocstore
+
 def load_or_create_vectordb(documents, embedding_model):
     if os.path.exists(INDEX_PATH):
         index = faiss.read_index(INDEX_PATH)
-        vectordb = FAISS(embedding_function=embedding_model.embed_query, index=index)
+        # 문서와 인덱스 매핑 생성
+        index_to_docstore_id = {i: str(i) for i in range(len(documents))}
+        docstore = InMemoryDocstore({str(i): doc for i, doc in enumerate(documents)})
+        vectordb = FAISS(
+            embedding_function=embedding_model.embed_query,
+            index=index,
+            docstore=docstore,
+            index_to_docstore_id=index_to_docstore_id
+        )
     else:
-        vectordb = FAISS(embedding_function=embedding_model.embed_documents, index=index)
+        vectordb = FAISS.from_documents(documents, embedding_model)
         faiss.write_index(vectordb.index, INDEX_PATH)
     return vectordb
+
 
 if "embedding_model" not in st.session_state or "vectordb" not in st.session_state:
     with st.spinner("🔍 임베딩 생성 중입니다. 잠시만 기다려주세요..."):
