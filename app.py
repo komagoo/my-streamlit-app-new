@@ -2,7 +2,7 @@ import os
 import sys
 import streamlit as st
 from dotenv import load_dotenv
-
+import faiss
 # 버전 확인
 st.write("Python version:", sys.version)
 
@@ -15,7 +15,7 @@ import re
 from collections import defaultdict, Counter
 import plotly.express as px
 import base64
-import tempfile  # 👈 추가
+
 
 # Langchain 관련
 from langchain.docstore.document import Document
@@ -24,23 +24,6 @@ from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import RetrievalQA
-
-# ↓ 이후에 벡터 저장소 만들 때 이렇게 사용하세요
-# 예시:
-# documents = [...]  # Document 객체 리스트
-# embedding_model = OpenAIEmbeddings()
-
-# 👇 임시 디렉토리 생성
-persist_directory = tempfile.mkdtemp()
-
-# 👇 임시 디렉토리를 사용하는 Chroma 초기화 예시
-# split_docs = [...]  # 문서 분할 결과
-# vectordb = Chroma.from_documents(
-#     documents=split_docs,
-#     embedding=embedding_model,
-#     persist_directory=persist_directory
-# )
-
 
 
 # 로고 이미지 base64 인코딩
@@ -55,7 +38,7 @@ logo_base64 = get_base64_of_bin_file(logo_path)
 # ----------------------------
 # 0. Streamlit 설정
 # ----------------------------
-st.set_page_config(page_title="HERO - 정비 도우미", layout="wide")
+st.set_page_config(page_title="🚀mySUNI X SK 프로젝트", layout="wide")
 
 # 상단 빨간색 라인 + 로고/제목 영역
 st.markdown(
@@ -90,7 +73,7 @@ if not st.session_state.logged_in:
     password = st.text_input("비밀번호", type="password")
 
     valid_users = {
-        "sunnyc250728!@": "sunnyc250728!@",
+        "mySUNI250728!@": "mySUNI250728!@",
     }
 
     if st.button("로그인"):
@@ -122,7 +105,9 @@ else:
 
 # 메인 타이틀 (로그인 후 최상단)
 # ----------------------------
-st.title("💡 AI 기반 정비 이력 분석 도우미")
+st.title("🛠 HERO (Hynix Equipment Response Operator)")
+st.caption("하이닉스 장비 문제, HERO와 함께 해결해요!")
+
 
 # ----------------------------
 # 2. 엑셀 업로드
@@ -251,7 +236,6 @@ for cause, actions in cause_action_counts.items():
 df_success = pd.DataFrame(rows)
 # ----------------------------
 # 5. LangChain RAG 준비 (임베딩 및 벡터 DB 생성, 세션 캐싱 포함)
-# ----------------------------
 documents = [
     Document(page_content=str(row['정비노트']), metadata={'row': idx})
     for idx, row in df.iterrows()
@@ -260,14 +244,22 @@ documents = [
 splitter = CharacterTextSplitter(chunk_size=500, chunk_overlap=50)
 split_docs = splitter.split_documents(documents)
 
+INDEX_PATH = "faiss_index.index"  # 저장할 인덱스 파일명
+
+def load_or_create_vectordb(documents, embedding_model):
+    if os.path.exists(INDEX_PATH):
+        index = faiss.read_index(INDEX_PATH)
+        vectordb = FAISS(embedding_function=embedding_model.embed_query, index=index)
+    else:
+        vectordb = FAISS.from_documents(documents, embedding_model)
+        faiss.write_index(vectordb.index, INDEX_PATH)
+    return vectordb
+
 if "embedding_model" not in st.session_state or "vectordb" not in st.session_state:
     with st.spinner("🔍 임베딩 생성 중입니다. 잠시만 기다려주세요..."):
         embedding_model = OpenAIEmbeddings(model="text-embedding-3-large")
 
-        # ✅ 임시 디렉토리로 설정 (Streamlit Cloud 호환)
-        persist_directory = tempfile.mkdtemp()
-
-        vectordb = FAISS.from_documents(split_docs, embedding_model)
+        vectordb = load_or_create_vectordb(split_docs, embedding_model)
 
         st.session_state["embedding_model"] = embedding_model
         st.session_state["vectordb"] = vectordb
@@ -282,7 +274,6 @@ qa_chain = RetrievalQA.from_chain_type(
     retriever=vectordb.as_retriever(search_kwargs={'k': 20}),
     return_source_documents=True
 )
-
 # ----------------------
 # 6. 사이드바 메뉴
 # ----------------------
@@ -295,7 +286,7 @@ menu = st.sidebar.radio(
 # 7. 정비 검색 & 추천 페이지
 # ----------------------
 if menu == "🔹 정비 검색 & 추천":
-    st.subheader("🤖 AI 정비 상담 챗봇")
+    st.subheader("🤖 HERO 챗봇 – 정비 문제, 제가 다 알고있어요!")
 
     example_keywords = [
         "wafer not", "plasma ignition failure",
@@ -314,8 +305,8 @@ if menu == "🔹 정비 검색 & 추천":
         <div style="background-color:#F1F0F0; color:black; padding:10px 15px;
                     border-radius:15px; max-width:80%;">
             안녕하세요👋<br>
-            반도체 장비 정비 이슈 해결 도우미에 오신 걸 환영합니다!<br>
-            정비 이슈를 입력하면 유사 사례를 찾아 써니봇이 해결책을 제안해드려요.<br><br>
+            반도체 장비 정비 이슈 해결 도우미 HERO입니다!<br>
+            정비 이슈를 입력하시면, HERO가 유사 사례를 찾아 해결책을 제안해드려요.<br><br>
             💡 {' | '.join(example_keywords)}
         </div>
     </div>
