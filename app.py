@@ -21,7 +21,7 @@ import tempfile  # 👈 추가
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.embeddings import OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_community.vectorstores import FAISS
 from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import RetrievalQA
 
@@ -267,11 +267,7 @@ if "embedding_model" not in st.session_state or "vectordb" not in st.session_sta
         # ✅ 임시 디렉토리로 설정 (Streamlit Cloud 호환)
         persist_directory = tempfile.mkdtemp()
 
-        vectordb = Chroma.from_documents(
-            documents=split_docs,
-            embedding=embedding_model,
-            persist_directory=persist_directory  # 💡 핵심 포인트
-        )
+        vectordb = FAISS.from_documents(split_docs, embedding_model)
 
         st.session_state["embedding_model"] = embedding_model
         st.session_state["vectordb"] = vectordb
