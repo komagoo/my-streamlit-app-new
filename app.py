@@ -41,13 +41,14 @@ pc = Pinecone(api_key=pinecone_api_key)
 
 index_name = "maintenance-index"
 
-# 인덱스 리스트 확인 및 생성
-existing_indexes = pc.list_indexes()
+existing_indexes = pc.list_indexes()  # .names() 없이도 리스트 반환
 if index_name not in existing_indexes:
- pc.create_index(
-    name=index_name,
-    dimension=1536
-)
+    pc.create_index(
+        name=index_name,
+        dimension=1536,
+        metric="cosine",  # 꼭 포함
+        spec=ServerlessSpec(cloud="aws", region="us-east-1")  # 무료 플랜 허용 region
+    )
 
 
 # 인덱스 객체 가져오기
