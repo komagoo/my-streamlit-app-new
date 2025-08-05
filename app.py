@@ -252,7 +252,7 @@ def load_or_create_vectordb(documents, embedding_model):
         index = faiss.read_index(INDEX_PATH)
         vectordb = FAISS(embedding_function=embedding_model.embed_query, index=index)
     else:
-        vectordb = FAISS.from_documents(documents, embedding_model)
+        vectordb = FAISS(embedding_function=embedding_model.embed_documents, index=index)
         faiss.write_index(vectordb.index, INDEX_PATH)
     return vectordb
 
