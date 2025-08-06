@@ -3,26 +3,29 @@ import sys
 import streamlit as st
 from dotenv import load_dotenv
 import faiss
+# 버전 확인
+st.write(f"Python version: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+
+
+# 환경 변수 로드 (.env)
+load_dotenv()
+
+# 일반 라이브러리
 import pandas as pd
 import re
 from collections import defaultdict, Counter
 import plotly.express as px
 import base64
+
+
+# Langchain 관련
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import RetrievalQA
-from multiprocessing import Pool  # 병렬 처리 추가
-import seaborn as sns  # 히트맵 추가
-import matplotlib.pyplot as plt  # 히트맵 추가
 
-# 버전 확인
-st.write(f"Python version: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
-
-# 환경 변수 로드 (.env)
-load_dotenv()
 
 # 로고 이미지 base64 인코딩
 def get_base64_of_bin_file(bin_file_path):
@@ -78,6 +81,7 @@ if not st.session_state.logged_in:
         if username in valid_users and password == valid_users[username]:
             st.session_state.logged_in = True
             st.session_state.username = username
+            # ✅ secrets에서 API 키 불러오기
             st.session_state.api_key = st.secrets["OPENAI_API_KEY"]
             st.success(f"✅ {username}님, 환영합니다!")
             st.rerun()
@@ -98,8 +102,13 @@ else:
         st.error("OpenAI API 키가 설정되어 있지 않습니다. 환경변수를 확인하거나 로그인 후 API 키를 입력하세요.")
         st.stop()
 
+
+
 # 메인 타이틀 (로그인 후 최상단)
+# ----------------------------
 st.markdown("<h2 style='color:#000000; font-weight:bold;'>하이닉스 장비 문제, HERO와 함께 해결해요!</h2>", unsafe_allow_html=True)
+
+
 
 # ----------------------------
 # 2. 엑셀 업로드
@@ -149,14 +158,7 @@ def extract_cause(note: str):
             return keyword
     return "기타"
 
-# 병렬 처리 추가
-def process_chunk(chunk):
-    return [extract_cause(note) for note in chunk]
-
-chunks = [df['정비노트'][i:i + 100] for i in range(0, len(df['정비노트']), 100)]
-with Pool() as pool:
-    results = pool.map(process_chunk, chunks)
-df['문제원인'] = [item for sublist in results for item in sublist]
+df['문제원인'] = df['정비노트'].apply(extract_cause)
 
 # ----------------------------
 # 4. 정비노트 기반 성공률 계산
@@ -233,7 +235,6 @@ for cause, actions in cause_action_counts.items():
         })
 
 df_success = pd.DataFrame(rows)
-
 # ----------------------------
 # 5. LangChain RAG 준비 (임베딩 및 벡터 DB 생성, 세션 캐싱 포함)
 documents = [
@@ -251,6 +252,7 @@ from langchain.docstore import InMemoryDocstore
 def load_or_create_vectordb(documents, embedding_model):
     if os.path.exists(INDEX_PATH):
         index = faiss.read_index(INDEX_PATH)
+        # 문서와 인덱스 매핑 생성
         index_to_docstore_id = {i: str(i) for i in range(len(documents))}
         docstore = InMemoryDocstore({str(i): doc for i, doc in enumerate(documents)})
         vectordb = FAISS(
@@ -264,16 +266,13 @@ def load_or_create_vectordb(documents, embedding_model):
         faiss.write_index(vectordb.index, INDEX_PATH)
     return vectordb
 
-# 임베딩 생성 중 단계별 진행 상태 표시 추가
+
 if "embedding_model" not in st.session_state or "vectordb" not in st.session_state:
     with st.spinner("🔍 임베딩 생성 중입니다. 잠시만 기다려주세요..."):
-        st.write("1/3 단계: 임베딩 모델 로드 중...")
         embedding_model = OpenAIEmbeddings(model="text-embedding-3-large")
-        
-        st.write("2/3 단계: 벡터 DB 생성 중...")
+
         vectordb = load_or_create_vectordb(split_docs, embedding_model)
-        
-        st.write("3/3 단계: 세션 상태 저장 중...")
+
         st.session_state["embedding_model"] = embedding_model
         st.session_state["vectordb"] = vectordb
 else:
@@ -287,7 +286,6 @@ qa_chain = RetrievalQA.from_chain_type(
     retriever=vectordb.as_retriever(search_kwargs={'k': 20}),
     return_source_documents=True
 )
-
 # ----------------------
 # 6. 사이드바 메뉴
 # ----------------------
@@ -296,8 +294,6 @@ menu = st.sidebar.radio(
     ["🔹 정비 검색 & 추천", "📈 정비 통계 자료"]
 )
 
-# ----------------------
-# ----------------------
 # ----------------------
 # 7. 정비 검색 & 추천 페이지
 # ----------------------
@@ -309,7 +305,12 @@ if menu == "🔹 정비 검색 & 추천":
         "pumpdown 시간 지연", "slot valve 동작 불량",
         "RF auto match 불량"
     ]
-
+ # ------------------ 항상 보이는 초반 인사말 ------------------
+    example_keywords = [
+        "wafer not", "plasma ignition failure",
+        "pumpdown 시간 지연", "slot valve 동작 불량",
+        "RF auto match 불량"
+    ]
     st.markdown(f"""
     <div style="display:flex; justify-content:flex-start; margin-bottom:10px;">
         <div style="font-size:30px; margin-right:8px;">🤖</div>
@@ -323,8 +324,11 @@ if menu == "🔹 정비 검색 & 추천":
     </div>
     """, unsafe_allow_html=True)
 
-    # 검색어 입력
-    query = st.text_input("정비 이슈를 입력하세요", placeholder="예: slot valve 동작이 안돼ㅠㅠ")
+    # ------------------ 답변 생성 로딩 스피너 ------------------
+    query = st.text_input(
+        "메시지를 입력하세요", key="search_query",
+        placeholder="예: slot valve 동작이 안돼ㅠㅠ"
+    )
 
     # ✅ 입력이 있을 때만 실행
     if query.strip():
@@ -455,8 +459,6 @@ if menu == "🔹 정비 검색 & 추천":
                         </div>
                         """, unsafe_allow_html=True)
 
-
-
 # ----------------------
 # 8. 정비 통계 페이지
 # ----------------------
@@ -484,15 +486,34 @@ elif menu == "📈 정비 통계 자료":
             fig1.update_traces(textposition='outside')
             st.plotly_chart(fig1, use_container_width=True)
 
-            # 상세 정보 표시 추가
-            selected_bar = st.selectbox("상세 정보를 확인할 항목을 선택하세요", top5_equip.index)
-            if selected_bar:
-                st.write(f"선택된 항목: {selected_bar}")
-                st.write(df[df['모델'] == selected_bar].head())
-
             prompt_cause = f"문제 원인: {', '.join(top5_equip.index)}\n각 장비의 고장 패턴과 발생 경향을 바탕으로, 예방 정비와 공정 운영 측면에서 얻을 수 있는 핵심 인사이트를 2~3문장으로 요약해 주세요. 숫자는 언급하지 마세요. 1~3위 정도는 장비도 자연스럽게 언급해 주세요."
             insight_cause = llm.predict(prompt_cause)
             st.markdown(f"💡 **문제 원인 인사이트:** {insight_cause}")
+
+            # 문제원인 10개 정의
+            problem_keywords = [
+                "wafer not", "plasma ignition failure", "pumpdown 시간 지연",
+                "mass flow controller 이상", "etch residue over spec",
+                "temperature abnormal", "slot valve 동작 불량",
+                "chamber leak", "sensor error", "RF auto match 불량"
+            ]
+
+            # TF-IDF 기반 문제원인 분류 (기타 제거)
+            from sklearn.feature_extraction.text import TfidfVectorizer
+            from sklearn.metrics.pairwise import cosine_similarity
+
+            notes = df['정비노트'].astype(str).str.lower().tolist()
+            corpus = notes + [kw.lower() for kw in problem_keywords]
+
+            vectorizer = TfidfVectorizer()
+            tfidf_matrix = vectorizer.fit_transform(corpus)
+
+            note_vecs = tfidf_matrix[:-len(problem_keywords)]
+            keyword_vecs = tfidf_matrix[-len(problem_keywords):]
+
+            similarity_matrix = cosine_similarity(note_vecs, keyword_vecs)
+            best_match_indices = similarity_matrix.argmax(axis=1)
+            df['문제원인'] = [problem_keywords[i] for i in best_match_indices]
 
             st.subheader("⚠️ 문제 원인 TOP5")
             top5_cause = df['문제원인'].value_counts().head(5)
@@ -552,12 +573,45 @@ elif menu == "📈 정비 통계 자료":
             insight_cause = llm.predict(prompt_cause)
             st.markdown(f"💡 **문제 원인 인사이트:** {insight_cause}")
 
+
+
     # ----------------------
     # Tab3: 장비별 상세
     # ----------------------
     with tab3:
         with st.spinner("📊 장비별 상세 데이터를 준비 중입니다..."):
             st.markdown("### 🔹 장비별 상세")
+
+            problem_keywords = [
+                "wafer not", "plasma ignition failure", "pumpdown 시간 지연",
+                "mass flow controller 이상", "etch residue over spec",
+                "temperature drift", "slot valve 동작 불량",
+                "chamber pressure fluctuation", "he flow deviation", "RF auto match 불량"
+            ]
+            alias_map = {
+                "wafer not 감지됨": "wafer not",
+                "wafer not 발생": "wafer not",
+                "rf auto match fail": "RF auto match 불량",
+                "slot valve 불량": "slot valve 동작 불량",
+                "he flow dev": "he flow deviation",
+            }
+
+            def normalize_note(note: str) -> str:
+                note = str(note).lower()
+                note = re.sub(r'\s+', ' ', note)
+                return note
+
+            def extract_cause(note: str):
+                note_low = normalize_note(note)
+                for alias, norm in alias_map.items():
+                    if alias in note_low:
+                        return norm
+                for keyword in problem_keywords:
+                    if keyword.lower() in note_low:
+                        return keyword
+                return "기타"
+
+            df['문제원인'] = df['정비노트'].apply(extract_cause)
 
             equip_list = df['모델'].dropna().unique().tolist()
             selected_equip = st.selectbox("장비를 선택하세요", ["전체"] + equip_list)
@@ -608,11 +662,3 @@ elif menu == "📈 정비 통계 자료":
                                 st.markdown(f"- {row['조치']}")
             else:
                 st.info("장비를 선택하면 해당 장비의 문제 원인과 추천 조치를 확인할 수 있습니다.")
-
-            # 히트맵 추가
-            st.subheader("🔥 장비별 문제 원인 빈도 히트맵")
-            heatmap_data = df.pivot_table(index='모델', columns='문제원인', aggfunc='size', fill_value=0)
-            plt.figure(figsize=(10, 6))
-            sns.heatmap(heatmap_data, annot=True, fmt="d", cmap="YlOrRd")
-            plt.title("장비별 문제 원인 빈도 히트맵")
-            st.pyplot(plt)
