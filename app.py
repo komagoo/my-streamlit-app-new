@@ -297,6 +297,7 @@ menu = st.sidebar.radio(
 )
 
 # ----------------------
+# ----------------------
 # 7. 정비 검색 & 추천 페이지
 # ----------------------
 if menu == "🔹 정비 검색 & 추천":
@@ -321,17 +322,8 @@ if menu == "🔹 정비 검색 & 추천":
     </div>
     """, unsafe_allow_html=True)
 
-    # 검색어 자동 완성 기능 추가
-    from streamlit_searchbox import st_searchbox
-
-    def search_suggestions(search_term):
-        return [kw for kw in problem_keywords if search_term.lower() in kw.lower()]
-
-    query = st_searchbox(
-        search_suggestions,
-        key="search_query",
-        placeholder="예: slot valve 동작이 안돼ㅠㅠ"
-    )
+    # 검색어 입력
+    query = st.text_input("정비 이슈를 입력하세요", placeholder="예: slot valve 동작이 안돼ㅠㅠ")
 
     # ✅ 입력이 있을 때만 실행
     if query.strip():
@@ -461,6 +453,7 @@ if menu == "🔹 정비 검색 & 추천":
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
+
 
 # ----------------------
 # 8. 정비 통계 페이지
