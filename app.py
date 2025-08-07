@@ -863,6 +863,5 @@ st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: #666; padding: 20px;">
     <p>🚀 <strong>HERO</strong> - Hynix Equipment Response Operator</p>
-    <p>AI 기반 반도체 장비 정비 솔루션 | Powered by OpenAI GPT-4</p>
 </div>
 """, unsafe_allow_html=True)
