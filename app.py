@@ -1658,8 +1658,5 @@ st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: #666; padding: 20px;">
     <p>🚀 <strong>HERO</strong> - Hynix Equipment Response Operator</p>
-    <p style="font-size: 0.9em; margin-top: 10px;">
-        ✨ 개선 사항: 저장위치 명확화 | UI 간소화 | 개인정보 표시 개선 | 노트 조회 탭 추가
-    </p>
 </div>
 """, unsafe_allow_html=True)
