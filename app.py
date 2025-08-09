@@ -231,66 +231,39 @@ os.environ["OPENAI_API_KEY"] = st.session_state.api_key
 # =========================
 logo_path = "Hero_logo(final).png"
 logo_b64 = get_base64_of_bin_file(logo_path)
-
-# 중앙 헤더 (이미지 없이 텍스트만)
-st.markdown("""
-<div style="background: linear-gradient(90deg, #ff4b4b, #ff6b6b); color:white; padding:20px; border-radius:10px; text-align:center; margin-bottom:30px;">
-    <h1 style="margin:0; font-size:2.5rem;">🚀 HERO</h1>
-    <p style="margin:0; font-size:1.2rem; opacity:0.9;">Hynix Equipment Response Operator</p>
-</div>
-""", unsafe_allow_html=True)
+if logo_b64:
+    st.markdown(f"""
+    <div style="background: linear-gradient(90deg, #ff4b4b, #ff6b6b); color:white; padding:20px; border-radius:10px; text-align:center; margin-bottom:30px;">
+        <div style="display:flex; align-items:center; justify-content:center;">
+            <img src="data:image/png;base64,{logo_b64}" style="height:80px; margin-right:20px;">
+            <div>
+                <h1 style="margin:0; font-size:2.5rem;">HERO</h1>
+                <p style="margin:0; font-size:1.2rem; opacity:0.9;">Hynix Equipment Response Operator</p>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <div style="background: linear-gradient(90deg, #ff4b4b, #ff6b6b); color:white; padding:20px; border-radius:10px; text-align:center; margin-bottom:30px;">
+        <h1 style="margin:0; font-size:2.5rem;">🚀 HERO</h1>
+        <p style="margin:0; font-size:1.2rem; opacity:0.9;">Hynix Equipment Response Operator</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 # =========================
 # 4) 사이드바
 # =========================
 with st.sidebar:
-    if logo_b64:
-        st.markdown(f"""
-        <div style="
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
-        ">
-            <div style="
-                display: inline-block;
-                background: radial-gradient(circle at center, rgba(255,255,255,0.3), transparent 70%);
-                border-radius: 20px;
-                padding: 20px;
-                box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
-            ">
-                <img src="data:image/png;base64,{logo_b64}" style="height:120px; display: block; margin: 0 auto; border-radius: 12px;">
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown("""
-        <div style="
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
-        ">
-            <h3 style="color:white; margin:0;">🚀 HERO</h3>
-        </div>
-        """, unsafe_allow_html=True)
-
-
-    
     name, contact, dept, role = get_user_profile(st.session_state.username)
     role_display = {
         'admin': '시스템 관리자', 
         'maintainer': '정비 담당자'
     }.get(st.session_state.user_role, st.session_state.user_role)
-        
+    
     # 선택된 부서 표시
     selected_dept = st.session_state.get('selected_department', dept)
-        
+    
     st.markdown(f"""
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; padding:20px; border-radius:10px; margin:10px 0;">
         <h4 style="margin:0;">👋 환영합니다!</h4>
@@ -300,7 +273,7 @@ with st.sidebar:
         {f'<p style="margin:4px 0 0 0;">📱 {contact}</p>' if contact else ''}
     </div>
     """, unsafe_allow_html=True)
-    
+
     with st.expander("⚙️ 내 정보 수정", expanded=False):
         with st.form("profile_form"):
             in_name = st.text_input("이름", value=name or "")
@@ -310,7 +283,7 @@ with st.sidebar:
                 save_user_profile(st.session_state.username, in_name, in_contact, in_dept)
                 st.success("✅ 개인정보가 저장되었습니다!")
                 st.rerun()
-    
+
     st.markdown("---")
     st.markdown("### 📊 시스템 현황")
     csv_path = os.path.abspath('maintenance_notes.csv')
@@ -320,11 +293,12 @@ with st.sidebar:
         st.caption(f"📁 CSV 위치: `{csv_path}`")
     else:
         st.info("아직 저장된 정비노트가 없습니다")
-    
+
     if st.button("🚪 로그아웃", use_container_width=True):
         for k in list(st.session_state.keys()):
             del st.session_state[k]
         st.rerun()
+
 # =========================
 # 5) 파일 업로드 및 데이터 로드
 # =========================
