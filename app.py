@@ -227,74 +227,173 @@ if not st.session_state.logged_in:
 os.environ["OPENAI_API_KEY"] = st.session_state.api_key
 
 # =========================
-# 3) 헤더/로고
+# 3) 헤더 (로고 제거)
 # =========================
-logo_path = "Hero_logo(final).png"
-logo_b64 = get_base64_of_bin_file(logo_path)
-if logo_b64:
-    st.markdown(f"""
-    <div style="background: linear-gradient(90deg, #ff4b4b, #ff6b6b); color:white; padding:20px; border-radius:10px; text-align:center; margin-bottom:30px;">
-        <div style="display:flex; align-items:center; justify-content:center;">
-            <img src="data:image/png;base64,{logo_b64}" style="height:80px; margin-right:20px;">
-            <div>
-                <h1 style="margin:0; font-size:2.5rem;">HERO</h1>
-                <p style="margin:0; font-size:1.2rem; opacity:0.9;">Hynix Equipment Response Operator</p>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-    <div style="background: linear-gradient(90deg, #ff4b4b, #ff6b6b); color:white; padding:20px; border-radius:10px; text-align:center; margin-bottom:30px;">
-        <h1 style="margin:0; font-size:2.5rem;">🚀 HERO</h1>
-        <p style="margin:0; font-size:1.2rem; opacity:0.9;">Hynix Equipment Response Operator</p>
-    </div>
-    """, unsafe_allow_html=True)
+st.markdown("""
+<div style="background: linear-gradient(90deg, #ff4b4b, #ff6b6b); color:white; padding:20px; border-radius:10px; text-align:center; margin-bottom:30px;">
+    <h1 style="margin:0; font-size:2.5rem;">🚀 HERO</h1>
+    <p style="margin:0; font-size:1.2rem; opacity:0.9;">Hynix Equipment Response Operator</p>
+</div>
+""", unsafe_allow_html=True)
 
 # =========================
-# 4) 사이드바
-# =========================
 with st.sidebar:
+    # 로고를 경계 없이 꽉 채우기
+    logo_path = "Hero_logo.png"
+    logo_b64 = get_base64_of_bin_file(logo_path)
+    if logo_b64:
+        st.markdown(f"""
+        <div style="width: 100%; height: auto; margin: 0; padding: 0; margin-bottom: 20px;">
+            <img src="data:image/png;base64,{logo_b64}" style="width: 100%; height: auto; display: block;">
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style="width: 100%; height: 100px; margin: 0; padding: 0; background-color:#ff4b4b; margin-bottom: 20px;"></div>
+        """, unsafe_allow_html=True)
+
+
+
+    # 사용자 프로필 - 더 세련되게
     name, contact, dept, role = get_user_profile(st.session_state.username)
     role_display = {
         'admin': '시스템 관리자', 
         'maintainer': '정비 담당자'
     }.get(st.session_state.user_role, st.session_state.user_role)
     
-    # 선택된 부서 표시
     selected_dept = st.session_state.get('selected_department', dept)
     
     st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; padding:20px; border-radius:10px; margin:10px 0;">
-        <h4 style="margin:0;">👋 환영합니다!</h4>
-        <p style="margin:8px 0 0 0;"><b>{name if name else st.session_state.username}</b></p>
-        <p style="margin:4px 0 0 0;">📋 {role_display}</p>
-        <p style="margin:4px 0 0 0;">🏢 {selected_dept if selected_dept else dept}</p>
-        {f'<p style="margin:4px 0 0 0;">📱 {contact}</p>' if contact else ''}
+    <div style="background: linear-gradient(135deg, #ff4b4b 0%, #ff6b6b 100%); 
+                color:white; padding:20px; border-radius:15px; margin-bottom:25px;
+                box-shadow: 0 4px 15px rgba(255,75,75,0.25);
+                position:relative; overflow:hidden;">
+        <div style="position:absolute; top:-20px; right:-20px; width:60px; height:60px; 
+                    background:rgba(255,255,255,0.1); border-radius:50%; opacity:0.7;"></div>
+        <h4 style="margin:0 0 12px 0; font-size:1.1rem; display:flex; align-items:center;">
+            <span style="margin-right:8px;">👋</span> 환영합니다!
+        </h4>
+        <div style="background:rgba(255,255,255,0.15); padding:12px; border-radius:10px; margin-bottom:10px;">
+            <div style="font-size:1.1rem; font-weight:700; margin-bottom:6px;">{name if name else st.session_state.username}</div>
+            <div style="font-size:0.85rem; opacity:0.95; margin-bottom:3px;">📋 {role_display}</div>
+            <div style="font-size:0.85rem; opacity:0.95; margin-bottom:3px;">🏢 {selected_dept if selected_dept else dept}</div>
+            {f'<div style="font-size:0.85rem; opacity:0.95;">📱 {contact}</div>' if contact else ''}
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
+    # 내 정보 수정 - 더 직관적이고 예쁘게
     with st.expander("⚙️ 내 정보 수정", expanded=False):
+        st.markdown("""
+        <div style="background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:15px; border-left:3px solid #ff4b4b;">
+            <small style="color:#666;">💡 <b>개인정보를 업데이트</b>하여 더 나은 서비스를 받으세요</small>
+        </div>
+        """, unsafe_allow_html=True)
+        
         with st.form("profile_form"):
-            in_name = st.text_input("이름", value=name or "")
-            in_contact = st.text_input("연락처", value=contact or "")
-            in_dept = st.text_input("소속", value=dept or "")
-            if st.form_submit_button("💾 저장", use_container_width=True):
+            col1, col2 = st.columns([1, 4])
+            with col1:
+                st.write("👤")
+            with col2:
+                in_name = st.text_input("이름", value=name or "", placeholder="홍길동", label_visibility="collapsed")
+            
+            col1, col2 = st.columns([1, 4])
+            with col1:
+                st.write("📱")
+            with col2:
+                in_contact = st.text_input("연락처", value=contact or "", placeholder="010-1234-5678", label_visibility="collapsed")
+            
+            col1, col2 = st.columns([1, 4])
+            with col1:
+                st.write("🏢")
+            with col2:
+                in_dept = st.text_input("소속", value=dept or "", placeholder="상세 부서명", label_visibility="collapsed")
+            
+            if st.form_submit_button("💾 저장하기", use_container_width=True, type="primary"):
                 save_user_profile(st.session_state.username, in_name, in_contact, in_dept)
-                st.success("✅ 개인정보가 저장되었습니다!")
+                st.success("✅ 저장완료!")
+                st.balloons()  # 재미있는 효과 추가
                 st.rerun()
 
-    st.markdown("---")
+    # 구분선을 더 세련되게
+    st.markdown("""
+    <div style="margin:30px 0; text-align:center;">
+        <div style="height:1px; background:linear-gradient(to right, transparent, #ddd, transparent);"></div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 시스템 현황 - 더 시각적으로
     st.markdown("### 📊 시스템 현황")
     csv_path = os.path.abspath('maintenance_notes.csv')
     if os.path.exists('maintenance_notes.csv'):
         csv_df_side = pd.read_csv('maintenance_notes.csv', encoding='utf-8')
-        st.metric("저장된 정비노트", f"{len(csv_df_side)}건")
-        st.caption(f"📁 CSV 위치: `{csv_path}`")
+        record_count = len(csv_df_side)
+        
+        # 멋진 통계 카드
+        st.markdown(f"""
+        <div style="background:linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); 
+                    padding:20px; border-radius:15px; 
+                    border:2px solid rgba(255,75,75,0.1);
+                    box-shadow:0 4px 15px rgba(0,0,0,0.05); 
+                    margin-bottom:20px; text-align:center;">
+            <div style="color:#ff4b4b; font-size:2.2rem; font-weight:bold; margin-bottom:5px;">
+                {record_count}
+            </div>
+            <div style="color:#666; font-size:0.9rem; font-weight:500;">
+                저장된 정비노트
+            </div>
+            <div style="margin-top:10px; padding:8px; background:rgba(255,75,75,0.1); 
+                        border-radius:20px; color:#ff4b4b; font-size:0.8rem; font-weight:600;">
+                ✅ 시스템 정상 운영중
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # 파일 정보는 접을 수 있게
+        with st.expander("🔍 상세 정보 보기", expanded=False):
+            st.caption("📁 **파일 위치**")
+            st.code(csv_path, language=None)
+            
+            # 추가 통계 정보
+            try:
+                import os
+                from datetime import datetime
+                file_size = os.path.getsize('maintenance_notes.csv')
+                mtime = os.path.getmtime('maintenance_notes.csv')
+                last_modified = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("파일 크기", f"{file_size:,} bytes")
+                with col2:
+                    st.metric("최근 업데이트", last_modified)
+            except:
+                pass
     else:
-        st.info("아직 저장된 정비노트가 없습니다")
+        st.markdown("""
+        <div style="background:linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); 
+                    padding:25px; border-radius:15px; 
+                    border:2px dashed #ddd;
+                    text-align:center; margin-bottom:20px;">
+            <div style="color:#999; font-size:3rem; margin-bottom:10px;">📝</div>
+            <div style="color:#666; font-size:0.9rem; font-weight:500;">
+                아직 저장된 정비노트가 없습니다
+            </div>
+            <div style="color:#999; font-size:0.8rem; margin-top:5px;">
+                첫 번째 정비 작업을 시작해보세요!
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    if st.button("🚪 로그아웃", use_container_width=True):
+    # 로그아웃 버튼 - 눈에 띄면서도 위험하지 않게
+    st.markdown("""
+    <div style="margin:30px 0; text-align:center;">
+        <div style="height:1px; background:linear-gradient(to right, transparent, #ddd, transparent);"></div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button("🚪 로그아웃", use_container_width=True, help="현재 세션을 종료합니다"):
+        st.warning("로그아웃 중...")
         for k in list(st.session_state.keys()):
             del st.session_state[k]
         st.rerun()
