@@ -244,19 +244,43 @@ st.markdown("""
 # 4) 사이드바
 # =========================
 with st.sidebar:
-    # 사이드바 상단에 로고 추가
     if logo_b64:
         st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding:15px; border-radius:10px; text-align:center; margin-bottom:20px;">
-            <img src="data:image/png;base64,{logo_b64}" style="height:120px;">
+        <div style="
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+        ">
+            <div style="
+                display: inline-block;
+                background: radial-gradient(circle at center, rgba(255,255,255,0.3), transparent 70%);
+                border-radius: 20px;
+                padding: 20px;
+                box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+            ">
+                <img src="data:image/png;base64,{logo_b64}" style="height:120px; display: block; margin: 0 auto; border-radius: 12px;">
+            </div>
         </div>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; padding:15px; border-radius:10px; text-align:center; margin-bottom:20px;">
+        <div style="
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+        ">
             <h3 style="color:white; margin:0;">🚀 HERO</h3>
         </div>
         """, unsafe_allow_html=True)
+
+
     
     name, contact, dept, role = get_user_profile(st.session_state.username)
     role_display = {
