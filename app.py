@@ -228,6 +228,9 @@ os.environ["OPENAI_API_KEY"] = st.session_state.api_key
 
 
 # ========================= 
+# 3) 헤더
+# =========================
+
 # Streamlit 기본 여백 제거
 st.markdown("""
     <style>
@@ -242,13 +245,6 @@ st.markdown("""
         /* 상단 여백 완전 제거 */
         .stApp > header {
             background-color: transparent;
-        }
-        /* 모바일 대응을 위한 이미지 크기 조정 */
-        @media (max-width: 768px) {
-            img {
-                max-width: 100%;
-                height: auto;
-            }
         }
     </style>
 """, unsafe_allow_html=True)
