@@ -1057,11 +1057,8 @@ if '모델' in df.columns and '정비자' in df.columns:
                     'contact': hero_contact
                 } 
 
-# =========================
-# 11) 메인 탭 (탭 튐 방지: 라디오 기반 네비게이션)
-# =========================
-# =========================
-# 11) 메인 탭 (튐 완전 방지: 위젯 key = 상태)
+
+
 # =========================
 # 1) 기본값 1회만 세팅
 if "active_main" not in st.session_state:
@@ -1266,11 +1263,11 @@ if main == "🔧 AI 정비 상담":
                 explanation = strip_code_fences(explanation_raw)
 
                 bot_resp = f"""
-<strong>{sev_line_html}</strong><br><br>
+<strong>{sev_line_html}</strong><br>
 <strong>✅ 추천 해결책 Top 3</strong>
 {top3_html}
 <br>
-<strong>💡 상세 설명:</strong><br>
+<strong>💡 상세 설명:</strong>
 {explanation}
 """.strip()
 
@@ -1291,7 +1288,7 @@ if main == "🔧 AI 정비 상담":
         for m in st.session_state.messages:
             cls = "user" if m["role"] == "user" else "bot"
             bubble = "user-message" if m["role"] == "user" else "bot-message"
-            icon = "👤 " if m["role"] == "user" else "🤖 "
+            icon = "👤 " if m["role"] == "user" else "🔧"
             st.markdown(f'<div class="row {cls}"><div class="bubble {bubble}">{icon}{m["content"]}</div></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1552,7 +1549,7 @@ elif main == "📊 정비 데이터 분석":
 
     # ========== 분석 탭 2: 전체 현황 ==========
     elif sub == "📈 전체 현황":
-        st.markdown("#### 📈 전체 현황 분석")
+        #st.markdown("#### 📈 전체 현황 분석")
         c1, c2 = st.columns(2)
 
         with c1:
@@ -1572,7 +1569,6 @@ elif main == "📊 정비 데이터 분석":
             st.plotly_chart(fig_pie2, use_container_width=True)
 
         st.divider()
-        st.markdown("#### 💡 전체 현황 분석")
         with st.spinner("전체 데이터를 분석하고 있습니다..."):
             prompt_total = f"""
 다음은 전체 장비 고장 및 문제 원인 분포 데이터입니다:
@@ -1589,101 +1585,7 @@ elif main == "📊 정비 데이터 분석":
             </div>
             """, unsafe_allow_html=True)
 
-        # 전체 조치 평균시간 도넛
-        st.divider()
-        st.subheader("⏱ 전체 조치 평균시간 도넛차트")
-        tmp = df.copy()
-        tmp["2차조치명"] = tmp["정비노트"].apply(_get_second_action)
-        tmp["3차조치명"] = tmp["정비노트"].apply(_get_third_action)
-        act2 = tmp.loc[tmp["2차조치명"] != "", ["2차조치명", "2차작업시간(h)"]].rename(columns={"2차조치명": "조치명", "2차작업시간(h)": "작업시간(h)"})
-        act3 = tmp.loc[tmp["3차조치명"] != "", ["3차조치명", "3차작업시간(h)"]].rename(columns={"3차조치명": "조치명", "3차작업시간(h)": "작업시간(h)"})
-        actions = pd.concat([act2, act3], ignore_index=True)
-        actions["작업시간(h)"] = pd.to_numeric(actions["작업시간(h)"], errors="coerce")
-        actions = actions.dropna(subset=["작업시간(h)"])
-        actions = actions[actions["작업시간(h)"] > 0]
-        actions["조치명"] = actions["조치명"].str.replace(r"\s+", " ", regex=True).str.strip()
 
-        stats_avg = (
-            actions.groupby("조치명", as_index=False)
-            .agg(건수=("작업시간(h)", "count"), 평균_작업시간_h=("작업시간(h)", "mean"))
-            .round({"평균_작업시간_h": 2})
-            .sort_values("평균_작업시간_h", ascending=False)
-        )
-
-        def _wrap_label(s: str, width: int = 12) -> str:
-            s = str(s)
-            return "<br>".join([s[i:i+width] for i in range(0, len(s), width)])
-
-        stats_avg_plot = stats_avg.copy()
-        stats_avg_plot["조치명_wrapped"] = stats_avg_plot["조치명"].apply(lambda x: _wrap_label(x, 12))
-
-        fig_pie_avg = px.pie(
-            stats_avg_plot,
-            names="조치명_wrapped",
-            values="평균_작업시간_h",
-            hole=0.35,
-            title="전체 조치 (평균 작업시간 기준)",
-        )
-        fig_pie_avg.update_traces(
-            textinfo="percent",
-            hovertemplate="<b>%{label}</b><br>평균 작업시간: %{value:.2f} h<br>%{percent}<extra></extra>",
-        )
-        fig_pie_avg.update_layout(
-            legend=dict(orientation="v", yanchor="top", y=1.0, xanchor="left", x=1.02, font=dict(size=11)),
-            margin=dict(l=10, r=10, t=60, b=10),
-            height=520,
-        )
-        st.plotly_chart(fig_pie_avg, use_container_width=True)
-
-        if not stats_avg.empty:
-            _long = stats_avg.head(5)
-            _summ3 = [f"{r['조치명']}({r['평균_작업시간_h']:.2f}h, {int(r['건수'])}건)" for _, r in _long.iterrows()]
-            prompt_avg_actions = (
-                "전체 조치의 평균 작업시간 상위 항목 요약입니다.\n"
-                f"{'; '.join(_summ3)}\n"
-                "병목 가능성과 일정/자원 계획 포인트를 2~3문장 줄글로만 제시해 주세요. 번호/불릿 금지."
-            )
-            insight_avg_actions = llm.predict(prompt_avg_actions)
-            st.markdown(f"💡 **조치 평균시간 인사이트:** {insight_avg_actions}")
-
-        # 전체 문제원인 치명도
-        st.divider()
-        st.subheader("🔥 전체 문제원인 치명도(종합 점수)")
-
-        _agg2 = (
-            df.groupby("문제원인", dropna=False)
-            .agg(
-                건수=("문제원인", "size"),
-                평균리드타임_h=("총리드타임(h)", "mean"),
-                P75_리드타임_h=("총리드타임(h)", lambda x: x.quantile(0.75)),
-                평균2차_h=("2차작업시간(h)", "mean"),
-                평균3차_h=("3차작업시간(h)", "mean"),
-            )
-            .fillna(0.0)
-        )
-        _agg2["평균운영시간_h"] = _agg2["평균2차_h"].fillna(0) + _agg2["평균3차_h"].fillna(0)
-        _agg2["N_평균리드"] = _safe_minmax(_agg2["평균리드타임_h"])
-        _agg2["N_P75"] = _safe_minmax(_agg2["P75_리드타임_h"])
-        _agg2["N_건수"] = _safe_minmax(_agg2["건수"])
-        _agg2["N_운영시간"] = _safe_minmax(_agg2["평균운영시간_h"])
-        _agg2["치명도점수"] = 0.4*_agg2["N_평균리드"] + 0.3*_agg2["N_P75"] + 0.2*_agg2["N_건수"] + 0.1*_agg2["N_운영시간"]
-
-        _score_all = _agg2.sort_values("치명도점수", ascending=False).reset_index()
-        fig_pie_sev = px.pie(_score_all, names="문제원인", values="치명도점수", hole=0.35, title="전체 문제원인 치명도 (도넛차트)")
-        fig_pie_sev.update_traces(textinfo="percent+label", hovertemplate="<b>%{label}</b><br>치명도 점수: %{value:.2f}<br>%{percent}<extra></extra>")
-        fig_pie_sev.update_layout(margin=dict(l=10, r=10, t=60, b=10), height=500)
-        st.plotly_chart(fig_pie_sev, use_container_width=True)
-
-        if not _score_all.empty:
-            _top_all = _score_all.head(5)[["문제원인", "치명도점수"]]
-            _summ4 = [f"{r['문제원인']}(점수 {r['치명도점수']:.2f})" for _, r in _top_all.iterrows()]
-            prompt_sev_all = (
-                "전체 문제원인 치명도 도넛차트 상위 항목입니다.\n"
-                f"{'; '.join(_summ4)}\n"
-                "장기 리스크 관리와 모니터링 우선순위를 2~3문장 줄글로만 요약해 주세요. 숫자 나열/불릿/번호 금지."
-            )
-            insight_sev_all = llm.predict(prompt_sev_all)
-            st.markdown(f"💡 **전체 치명도 인사이트:** {insight_sev_all}")
 
     # ========== 분석 탭 3: 장비별 상세 ==========
     elif sub == "🔧 장비별 분석":
